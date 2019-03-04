@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "jsx": "react",
+    "module": "es2015",
+    "moduleResolution": "node",
+    "target": "es5",
+    "lib": [ "es6", "dom" ],
+    "types": [ "webpack-env" ]
+  }
+}
