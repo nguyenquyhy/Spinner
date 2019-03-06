@@ -16,6 +16,8 @@ interface State {
     spinAngle: number | null;
 
     stableAngle: number;
+
+    savedData: string[] | null;
 }
 
 interface RouteProps {
@@ -42,7 +44,9 @@ export default class Room extends React.PureComponent<Props, State> {
 
             spinDuration: null,
             spinAngle: null,
-            stableAngle: 0
+            stableAngle: 0,
+
+            savedData: null
         };
     }
 
@@ -52,6 +56,16 @@ export default class Room extends React.PureComponent<Props, State> {
     }
 
     componentDidMount() {
+        if (localStorage) {
+            var item = localStorage.getItem('room_' + this.props.match.params.id + '_options');
+            if (item) {
+                var items = JSON.parse(item) as string[];
+                this.setState({
+                    savedData: items
+                });
+            }
+        }
+
         this.connection = new SignalR.HubConnectionBuilder().withUrl('/Hubs/Room').build();
 
         if (this.connection) {
@@ -70,6 +84,8 @@ export default class Room extends React.PureComponent<Props, State> {
                     options: options,
                     stableAngle: stableAngle
                 });
+
+                this.saveOption(options);
             });
 
             this.connection.on("Spin", (degree: number, seconds: number) => {
@@ -123,6 +139,8 @@ export default class Room extends React.PureComponent<Props, State> {
                 options: options
             });
 
+            this.saveOption(options);
+
             this.connection.send("Sync", this.props.match.params.id, options, this.state.stableAngle);
         }
     }
@@ -133,7 +151,31 @@ export default class Room extends React.PureComponent<Props, State> {
             options: options
         });
 
+        this.saveOption(options);
+
         this.connection.send("Sync", this.props.match.params.id, options);
+    }
+
+    onLoadOptions() {
+        if (this.state.savedData) {
+            this.setState({
+                options: this.state.savedData
+            });
+        }
+    }
+
+    saveOption(options: string[]) {
+        if (localStorage) {
+            var key = 'room_' + this.props.match.params.id + '_options';
+
+            if (options.length == 0) {
+                localStorage.removeItem(key)
+                this.log('Removed options.');
+            } else {
+                localStorage.setItem(key, JSON.stringify(options));
+                this.log('Saved options.');
+            }
+        }
     }
 
     onSpin() {
@@ -173,7 +215,7 @@ export default class Room extends React.PureComponent<Props, State> {
                             angle={this.state.stableAngle}
                             spinAngle={this.state.spinAngle}
                             spinDuration={this.state.spinDuration}
-                            size={380}/>
+                            size={380} />
                         <StyledSpin className="btn btn-warning" onClick={() => this.onSpin()}
                             style={{ visibility: this.state.options.length >= 2 && !this.state.spinDuration && !this.state.spinAngle ? '' : 'hidden' }}
                         >Spin</StyledSpin>
@@ -197,6 +239,8 @@ export default class Room extends React.PureComponent<Props, State> {
                                         <button className="btn btn-primary" type="submit">Add</button>
                                     </div>
                                 </div>
+                                {this.state.options.length == 0 && this.state.savedData &&
+                                    <StyledLoadButton className="btn btn-warning" onClick={() => this.onLoadOptions()}>Load previous options</StyledLoadButton>}
                             </StyledForm>}
                         </StyledOptions>
                     </div>
@@ -212,6 +256,11 @@ const StyledLayout = styled.div`
   display: grid;
   grid-template-columns: 1fr auto;
 }
+`;
+
+const StyledLoadButton = styled.button`
+width: 100%;
+margin-top: 10px;
 `;
 
 const StyledOptions = styled.div`
