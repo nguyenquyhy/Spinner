@@ -2,6 +2,8 @@
 import { RouteComponentProps } from "react-router";
 import * as SignalR from '@aspnet/signalr';
 import styled from 'styled-components';
+import Wheel from "../controls/Wheel";
+import Connecting from "../controls/Connecting";
 
 interface State {
     connected: boolean;
@@ -135,12 +137,14 @@ export default class Room extends React.PureComponent<Props, State> {
     }
 
     onSpin() {
-        var seconds = 4;
-        var degree = Math.random() * 2 * 360 + 360 * 3;
+        if (!this.state.spinAngle && !this.state.spinDuration) {
+            var seconds = 4;
+            var degree = Math.random() * 2 * 360 + 360 * 3;
 
-        this.connection.send("Spin", this.props.match.params.id, degree, seconds);
+            this.connection.send("Spin", this.props.match.params.id, degree, seconds);
 
-        this.spin(degree, seconds);
+            this.spin(degree, seconds);
+        }
     }
 
     spin(degree: number, seconds: number) {
@@ -161,27 +165,24 @@ export default class Room extends React.PureComponent<Props, State> {
         return <React.Fragment>
             <h2>Room {this.props.match.params.id}</h2>
 
-            {!this.state.connected ? <div>Connecting...</div> :
+            {!this.state.connected ?
+                <Connecting /> :
                 <StyledLayout>
                     <div>
-                        <StyledPieWrapper>
-                            <StyledPie spinDuration={this.state.spinDuration} spinAngle={this.state.spinAngle} angle={this.state.stableAngle}>
-                                {this.state.options.map((option, index) => (
-                                    <StyledSlice key={index} angle={index * 360 / this.state.options.length}>
-                                        <StyledSliceInner angle={360 / this.state.options.length} color={colors[index % colors.length]} />
-                                        <StyledSliceText>{option}</StyledSliceText>
-                                    </StyledSlice>
-                                ))}
-                            </StyledPie>
-                            <StyledArrow />
-                        </StyledPieWrapper>
-                        {!this.state.spinDuration && !this.state.spinAngle &&
-                            <StyledSpin className="btn btn-warning" onClick={() => this.onSpin()}>Spin</StyledSpin>}
+                        <Wheel options={this.state.options}
+                            angle={this.state.stableAngle}
+                            spinAngle={this.state.spinAngle}
+                            spinDuration={this.state.spinDuration}
+                            size={380}/>
+                        <StyledSpin className="btn btn-warning" onClick={() => this.onSpin()}
+                            style={{ visibility: this.state.options.length >= 2 && !this.state.spinDuration && !this.state.spinAngle ? '' : 'hidden' }}
+                        >Spin</StyledSpin>
                     </div>
 
                     <div>
                         {false && <StyledLogs readOnly={true} value={this.state.logs.join('\n')} />}
 
+                        <h4>Options</h4>
                         <StyledOptions>
                             {this.state.options.map((option, index) => (
                                 <React.Fragment key={index}>
@@ -206,26 +207,15 @@ export default class Room extends React.PureComponent<Props, State> {
     }
 }
 
-const colors = [
-    '#F44336',
-    '#E91E63',
-    '#9C27B0',
-    '#673AB7',
-    '#3F51B5',
-    '#2196F3',
-    '#03A9F4',
-    '#00BCD4',
-    '#009688',
-    '#4CAF50'
-]
-
 const StyledLayout = styled.div`
-display: grid;
-grid-template-columns: 1fr auto;
+@media(min-width: 768px) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
 `;
 
 const StyledOptions = styled.div`
-max-width: 400px;
+max-width: 600px;
 width: 100%;
 display: grid;
 grid-template-columns: 1fr auto;
@@ -233,79 +223,15 @@ grid-gap: 5px;
 `;
 
 const StyledOption = styled.div`
+border-top: 1px lightgray solid;
+border-bottom: 1px lightgray solid;
+border-left: 1px lightgray solid;
+margin-right: -8px;
+padding: 4px 10px;
 `;
 
 const StyledForm = styled.form`
 grid-column: span 2;
-`;
-
-const StyledPieWrapper = styled.div`
-position: relative;
-margin: 0 auto 20px auto;
-padding-top: 20px;
-height: 420px;
-width: 400px;
-overflow: hidden;
-`;
-
-const StyledArrow = styled.div`
-width: 0; 
-height: 0; 
-border-left: 20px solid transparent;
-border-right: 20px solid transparent;
-border-top: 20px solid #F1C40F;
-margin: 0 auto;
-position: absolute;
-top: 10px;
-left: 180px;
-`;
-
-const StyledPie = styled.div`
-position: relative;
-height: 400px;
-width: 400px;
-transform: rotate(${props => props.angle}deg);
-
-${props => props.spinDuration && props.spinAngle && `
-@keyframes spin {
-  100% { transform: rotate(${props.spinAngle + props.angle}deg); }
-}
-
-animation: spin ${props.spinDuration}s ease both;
-`}
-
-`;
-
-const StyledSlice = styled.div`
-position: absolute;
-top: 0;
-left: 0;
-height: 400px;
-width: 400px;
-border-radius: 200px;
-clip: rect(0, 400px, 400px, 200px);
-transform: rotate(${props => props.angle}deg);
-overflow: hidden;
-`;
-
-const StyledSliceInner = styled.div`
-position: absolute;
-top: 0;
-left: 0;
-height: 400px;
-width: 400px;
-border-radius: 200px;
-background-color: ${props => props.color};
-clip: rect(0px, 200px, 400px, 0px);
-transform: rotate(${props => props.angle}deg);
-`;
-
-const StyledSliceText = styled.div`
-transform: translate(20px, -40px) rotate(90deg);
-text-align: right;
-font-weight: bold;
-font-size: 1.1em;
-color: white;s
 `;
 
 const StyledSpin = styled.button`
