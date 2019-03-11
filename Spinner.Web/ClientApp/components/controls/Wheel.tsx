@@ -1,5 +1,5 @@
 ﻿import * as React from "react";
-import styled from "styled-components";
+import styled, { keyframes, css } from "styled-components";
 
 interface Props {
     options: string[];
@@ -89,17 +89,18 @@ top: 10px;
 left: ${props => props.size / 2 - 20}px;
 `;
 
+const AnimationSpin = props => keyframes`
+100% { transform: rotate(${props.spinAngle + props.angle}deg); }
+`;
+
 const StyledPie = styled.div`
 position: relative;
 height: ${props => props.size}px;
 width: ${props => props.size}px;
 transform: rotate(${props => props.angle}deg);
 
-${props => props.spinDuration && props.spinAngle && `
-@keyframes spin {
-100% { transform: rotate(${props.spinAngle + props.angle}deg); }
-}
-animation: spin ${props.spinDuration}s ease both;
+${props => props.spinDuration && props.spinAngle && css`
+animation: ${AnimationSpin} ${props.spinDuration}s ease both;
 `}
 `;
 
